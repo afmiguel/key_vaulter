@@ -1,10 +1,12 @@
 use keyring::{Entry, Result};
 use std::io::{self, Write};
+#[allow(unused_imports)]
+use std::env;
 
 pub struct KeyManager {
-    system_name: String,
-    key_name: String,
-    key_value: Option<String>,
+    pub system_name: String,
+    pub key_name: String,
+    pub key_value: Option<String>,
 }
 
 impl KeyManager {
@@ -17,8 +19,22 @@ impl KeyManager {
         }
     }
 
-    /// Reads the value of a key from the keyring.
+    /// Reads the value of a key from the keyring or environment variable (if feature `env_key` is enabled).
+    ///
+    /// Priority of key lookup:
+    /// 1. **Environment Variable**: If the feature `env_key` is enabled, it will first try to read the key from the environment variables.
+    /// 2. **Keyring**: If the key is not in the environment variables, it will then try to read it from the keyring.
     pub fn read_key(&mut self) -> Result<String> {
+        // Se a feature `env_key` estiver habilitada, tente ler da variável de ambiente
+        #[cfg(feature = "env_key")]
+        {
+            if let Ok(env_value) = env::var(&self.key_name) {
+                self.key_value = Some(env_value.clone());
+                return Ok(env_value);
+            }
+        }
+
+        // Se não estiver na variável de ambiente, lê do keyring
         let entry = Entry::new(&self.system_name, &self.key_name)?;
         let password = entry.get_password()?;
         self.key_value = Some(password.clone());
@@ -113,4 +129,17 @@ mod tests {
         let result = manager.read_key();
         assert!(result.is_err());
     }
+
+    #[cfg(feature = "env_key")]
+    #[test]
+    fn test_read_key_from_env_variable() {
+        env::set_var("TEST_KEY_ENV", "value_from_env");
+        let mut manager = KeyManager::new("key_manager_service", "TEST_KEY_ENV");
+
+        let read_value = manager.read_key().unwrap();
+        assert_eq!(read_value, "value_from_env");
+
+        env::remove_var("TEST_KEY_ENV");
+    }
+
 }

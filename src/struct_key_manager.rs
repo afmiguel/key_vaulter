@@ -47,7 +47,8 @@ where
         // Atualiza cada campo do JSON com o valor do usuário
         if let serde_json::Value::Object(ref mut fields) = struct_map {
             for (field_name, field_value) in fields.iter_mut() {
-                println!("Please enter the value for field '{}':", field_name);
+                print!("Please enter the value for field '{}': ", field_name);
+                io::stdout().flush().map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
                 let mut input = String::new();
                 io::stdout().flush().map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
                 io::stdin().read_line(&mut input).map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
@@ -115,13 +116,20 @@ mod tests {
 
     #[test]
     fn test_struct_key_manager_new() {
-        let manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key");
-        assert_eq!(manager.key_manager.key_name, "test_struct_key");
+        let manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key1");
+        assert_eq!(manager.key_manager.key_name, "test_struct_key1");
     }
 
     #[test]
     fn test_store_and_read_struct_key() {
-        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key");
+        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key2");
+        match manager.read_key() {
+            Ok(_) => {
+                manager.delete_key().unwrap();
+            },
+            Err(_) => {
+            }
+        }
         let test_value = TestStruct {
             field1: "value1".to_string(),
             field2: 42,
@@ -133,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_read_or_request_struct_key() {
-        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key");
+        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key3");
         match manager.read_key() {
             Ok(value) => {
                 assert_eq!(manager.read_or_request_key().unwrap(), value);
@@ -147,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_delete_struct_key() {
-        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key");
+        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key4");
         let test_value = TestStruct {
             field1: "value1".to_string(),
             field2: 42,

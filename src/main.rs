@@ -1,4 +1,4 @@
-use keyring_test2::struct_key_manager::StructKeyManager;
+use key_vaulter::struct_key_manager::StructKeyManager;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Default)]
@@ -25,4 +25,6 @@ fn main() {
             eprintln!("Failed to read or request key from keyring: {:?}", err);
         }
     }
+
+    manager.delete_key().unwrap();
 }
