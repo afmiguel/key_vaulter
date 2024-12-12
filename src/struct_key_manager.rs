@@ -165,4 +165,25 @@ mod tests {
         let result = manager.read_key();
         assert!(result.is_err());
     }
+
+    #[cfg(feature = "env_key")]
+    #[test]
+    fn test_read_from_environment() {
+        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key5");
+        let test_value = TestStruct {
+            field1: "value1".to_string(),
+            field2: 42,
+        };
+        let read_value = match manager.read_key(){
+            Ok(value) => value,
+            Err(_) => {
+                panic!("Please, add the following environment variable:\nexport test_struct_key5='{{\"field1\":\"value1\",\"field2\":42}}'");
+            }
+        };
+        println!("{:?}", read_value);
+        println!("{:?}", test_value);
+        manager.delete_key().unwrap();
+        assert_eq!(read_value, test_value);
+    }
+
 }
