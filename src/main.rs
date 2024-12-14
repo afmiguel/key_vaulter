@@ -3,7 +3,9 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Default)]
 struct MyStruct {
+    #[serde(rename = "NOME USUÁRIO")]
     username: String,
+    #[serde(rename = "IDADE")]
     age: u32,
 }
 
