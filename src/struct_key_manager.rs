@@ -23,6 +23,7 @@ where
     /// Reads the value of a key from the keyring and deserializes it into a struct.
     pub fn read_key(&mut self) -> Result<T> {
         let json_value = self.key_manager.read_key()?;
+        // println!("{:#?}", json_value);
         let struct_value: T = serde_json::from_str(&json_value).map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
         Ok(struct_value)
     }
@@ -166,7 +167,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[cfg(feature = "env_key")]
+    #[cfg(feature = "use_env_credentials")]
     #[test]
     fn test_read_from_environment() {
         let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key5");

@@ -19,15 +19,16 @@ impl KeyManager {
         }
     }
 
-    /// Reads the value of a key from the keyring or environment variable (if feature `env_key` is enabled).
+    /// Reads the value of a key from the keyring or environment variable (if feature `use_env_credentials` is enabled).
     ///
     /// Priority of key lookup:
-    /// 1. **Environment Variable**: If the feature `env_key` is enabled, it will first try to read the key from the environment variables.
+    /// 1. **Environment Variable**: If the feature `use_env_credentials` is enabled, it will first try to read the key from the environment variables.
     /// 2. **Keyring**: If the key is not in the environment variables, it will then try to read it from the keyring.
     pub fn read_key(&mut self) -> Result<String> {
-        // Se a feature `env_key` estiver habilitada, tente ler da variável de ambiente
-        #[cfg(feature = "env_key")]
+        // Se a feature `use_env_credentials` estiver habilitada, tente ler da variável de ambiente
+        #[cfg(feature = "use_env_credentials")]
         {
+            // println!("Feature `use_env_credentials` is enabled.");
             if let Ok(env_value) = env::var(&self.key_name) {
                 self.key_value = Some(env_value.clone());
                 return Ok(env_value);
@@ -100,7 +101,9 @@ mod tests {
             Ok(_) => {
                 manager.delete_key().unwrap();
             },
-            Err(_) => {}
+            Err(e) => {
+                assert_eq!(format!("{:?}", e), "Error(PlatformFailure(Other(\"No such file or directory (os error 2)\")))");
+            }
         }
         manager.store_key(test_value).unwrap();
         let read_value = manager.read_key().unwrap();
@@ -130,7 +133,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[cfg(feature = "env_key")]
+    #[cfg(feature = "use_env_credentials")]
     #[test]
     fn test_read_key_from_env_variable() {
         env::set_var("TEST_KEY_ENV", "value_from_env");

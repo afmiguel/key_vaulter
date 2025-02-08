@@ -14,7 +14,7 @@ The **Key Vaulter** library is a Rust crate designed to facilitate the secure ma
 
 - **Key Management**: Store, read, update, and delete keys in the system keyring.
 - **Struct Serialization**: Store entire Rust structs as JSON in the keyring.
-- **Environment Variable Support**: Optionally read keys from environment variables (requires `env_key` feature).
+- **Environment Variable Support**: Optionally read keys from environment variables (requires `use_env_credentials` feature).
 - **Cross-Platform**: Supports Windows, macOS, and Linux.
 
 ---
@@ -32,7 +32,7 @@ To enable the **environment variable support**, add the following feature flag t
 
 ```toml
 [dependencies]
-key_vaulter = { version = "0.1.0", features = ["env_key"] }
+key_vaulter = { version = "0.1.0", features = ["use_env_credentials"] }
 ```
 
 ---
@@ -98,7 +98,7 @@ fn main() {
 
 ### 3. **Reading from Environment Variables**
 
-If the `env_key` feature is enabled, **Key Vaulter** will prioritize reading the key from the environment variable before attempting to read from the keyring.
+If the `use_env_credentials` feature is enabled, **Key Vaulter** will prioritize reading the key from the environment variable before attempting to read from the keyring.
 
 ```rust
 use key_vaulter::key_manager::KeyManager;
@@ -174,7 +174,7 @@ The tests cover the following scenarios:
 - Storing and reading a simple key
 - Storing and reading a serialized struct
 - Deleting keys from the keyring
-- Reading from environment variables (when the `env_key` feature is enabled)
+- Reading from environment variables (when the `use_env_credentials` feature is enabled)
 
 ---
 
