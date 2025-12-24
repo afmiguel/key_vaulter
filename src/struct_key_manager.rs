@@ -1,6 +1,6 @@
-use keyring::Result;
 use crate::key_manager::KeyManager;
-use serde::{Serialize, Deserialize};
+use keyring::Result;
+use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 
 pub struct StructKeyManager<T> {
@@ -24,12 +24,16 @@ where
     pub fn read_key(&mut self) -> Result<T> {
         let json_value = self.key_manager.read_key()?;
         // println!("{:#?}", json_value);
-        let struct_value: T = serde_json::from_str(&json_value).map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
+        let struct_value: T = serde_json::from_str(&json_value)
+            .map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
         Ok(struct_value)
     }
 
     /// Reads the value of the key, and if it does not exist, prompts the user and saves the new key value in the keyring.
-    pub fn read_or_request_key(&mut self) -> Result<T> {
+    pub fn read_or_request_key(&mut self, force: bool) -> Result<T> {
+        if force {
+            return self.request_key();
+        }
         match self.read_key() {
             Ok(value) => Ok(value),
             Err(_) => {
@@ -49,10 +53,16 @@ where
         if let serde_json::Value::Object(ref mut fields) = struct_map {
             for (field_name, field_value) in fields.iter_mut() {
                 print!("Please enter the value for field '{}': ", field_name);
-                io::stdout().flush().map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
+                io::stdout()
+                    .flush()
+                    .map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
                 let mut input = String::new();
-                io::stdout().flush().map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
-                io::stdin().read_line(&mut input).map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
+                io::stdout()
+                    .flush()
+                    .map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
+                io::stdin()
+                    .read_line(&mut input)
+                    .map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
                 let input = input.trim().to_string();
 
                 // Tenta determinar o tipo do campo e realizar a conversão apropriada
@@ -60,7 +70,10 @@ where
                     match input.parse::<i64>() {
                         Ok(num) => serde_json::Value::Number(num.into()),
                         Err(_) => {
-                            eprintln!("Invalid input for field '{}'. Expected a number.", field_name);
+                            eprintln!(
+                                "Invalid input for field '{}'. Expected a number.",
+                                field_name
+                            );
                             continue; // Pede o valor novamente
                         }
                     }
@@ -69,7 +82,10 @@ where
                         "true" => serde_json::Value::Bool(true),
                         "false" => serde_json::Value::Bool(false),
                         _ => {
-                            eprintln!("Invalid input for field '{}'. Expected true or false.", field_name);
+                            eprintln!(
+                                "Invalid input for field '{}'. Expected true or false.",
+                                field_name
+                            );
                             continue; // Pede o valor novamente
                         }
                     }
@@ -91,11 +107,10 @@ where
         Ok(struct_value)
     }
 
-
-
     /// Serializes the struct and stores it as the key value in the keyring.
     pub fn store_key(&mut self, value: &T) -> Result<()> {
-        let json_value = serde_json::to_string(value).map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
+        let json_value = serde_json::to_string(value)
+            .map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
         self.key_manager.store_key(&json_value)
     }
 
@@ -117,19 +132,20 @@ mod tests {
 
     #[test]
     fn test_struct_key_manager_new() {
-        let manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key1");
+        let manager: StructKeyManager<TestStruct> =
+            StructKeyManager::new("key_manager_service", "test_struct_key1");
         assert_eq!(manager.key_manager.key_name, "test_struct_key1");
     }
 
     #[test]
     fn test_store_and_read_struct_key() {
-        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key2");
+        let mut manager: StructKeyManager<TestStruct> =
+            StructKeyManager::new("key_manager_service", "test_struct_key2");
         match manager.read_key() {
             Ok(_) => {
                 manager.delete_key().unwrap();
-            },
-            Err(_) => {
             }
+            Err(_) => {}
         }
         let test_value = TestStruct {
             field1: "value1".to_string(),
@@ -142,11 +158,12 @@ mod tests {
 
     #[test]
     fn test_read_or_request_struct_key() {
-        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key3");
+        let mut manager: StructKeyManager<TestStruct> =
+            StructKeyManager::new("key_manager_service", "test_struct_key3");
         match manager.read_key() {
             Ok(value) => {
                 assert_eq!(manager.read_or_request_key().unwrap(), value);
-            },
+            }
             Err(_) => {
                 // Test input is not automated in this example.
                 // To test this function, you would need to simulate stdin input.
@@ -156,7 +173,8 @@ mod tests {
 
     #[test]
     fn test_delete_struct_key() {
-        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key4");
+        let mut manager: StructKeyManager<TestStruct> =
+            StructKeyManager::new("key_manager_service", "test_struct_key4");
         let test_value = TestStruct {
             field1: "value1".to_string(),
             field2: 42,
@@ -170,12 +188,13 @@ mod tests {
     #[cfg(feature = "use_env_credentials")]
     #[test]
     fn test_read_from_environment() {
-        let mut manager: StructKeyManager<TestStruct> = StructKeyManager::new("key_manager_service", "test_struct_key5");
+        let mut manager: StructKeyManager<TestStruct> =
+            StructKeyManager::new("key_manager_service", "test_struct_key5");
         let test_value = TestStruct {
             field1: "value1".to_string(),
             field2: 42,
         };
-        let read_value = match manager.read_key(){
+        let read_value = match manager.read_key() {
             Ok(value) => value,
             Err(_) => {
                 panic!("Please, add the following environment variable:\nexport test_struct_key5='{{\"field1\":\"value1\",\"field2\":42}}'");
@@ -186,5 +205,4 @@ mod tests {
         manager.delete_key().unwrap();
         assert_eq!(read_value, test_value);
     }
-
 }

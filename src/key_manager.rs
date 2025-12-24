@@ -1,7 +1,7 @@
 use keyring::{Entry, Result};
-use std::io::{self, Write};
 #[allow(unused_imports)]
 use std::env;
+use std::io::{self, Write};
 
 pub struct KeyManager {
     pub system_name: String,
@@ -57,8 +57,12 @@ impl KeyManager {
     pub fn request_key(&mut self) -> Result<String> {
         println!("Please enter the value for key {}:", self.key_name);
         let mut input = String::new();
-        io::stdout().flush().map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
-        io::stdin().read_line(&mut input).map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
+        io::stdout()
+            .flush()
+            .map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
+        io::stdin()
+            .read_line(&mut input)
+            .map_err(|e| keyring::Error::PlatformFailure(Box::new(e)))?;
         let input = input.trim().to_string();
         self.store_key(&input)?;
         Ok(input)
@@ -100,9 +104,12 @@ mod tests {
         match manager.read_key() {
             Ok(_) => {
                 manager.delete_key().unwrap();
-            },
+            }
             Err(e) => {
-                assert_eq!(format!("{:?}", e), "Error(PlatformFailure(Other(\"No such file or directory (os error 2)\")))");
+                assert_eq!(
+                    format!("{:?}", e),
+                    "Error(PlatformFailure(Other(\"No such file or directory (os error 2)\")))"
+                );
             }
         }
         manager.store_key(test_value).unwrap();
@@ -116,7 +123,7 @@ mod tests {
         match manager.read_key() {
             Ok(value) => {
                 assert_eq!(manager.read_or_request_key().unwrap(), value);
-            },
+            }
             Err(_) => {
                 // Test input is not automated in this example.
                 // To test this function, you would need to simulate stdin input.
@@ -144,5 +151,4 @@ mod tests {
 
         env::remove_var("TEST_KEY_ENV");
     }
-
 }
